@@ -7,17 +7,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.*;
 
-/* Author : Harry Whittaker
- * Date   : 19/04/2017 
+/**
  * 
+ * @author Harry Whittaker
+ * @since 24/04/2017
+ *
  * This class handles the main computation of this xml document search engine.
  * This works for XML documents with <title> and <text> tags.
  * The number of document will have to me manually changed when there is more or less than 10 docs.
  * The Location of the documents and stop words will also have to be manually inputed.
  * 
- * 
  */
-
 public class Processor {
 	//number of documents
 	final static int NUM_DOCS = 10;
@@ -46,6 +46,7 @@ public class Processor {
 		 getStopWords();
 		 initializeBDocs(docs);		 
 		 addDocsToBdocs(docs); 		 
+		 bDocs[0].displayDocInfo();
 		 calcIfidf();
 		 
 		 Scanner reader = new Scanner(System.in);		 
@@ -55,15 +56,13 @@ public class Processor {
 			 calcBM25();
 			 printResult();	
 			 System.out.println();
-		 }	 	 
-		
+		 }			
 	}	
 	 
 	 /**
 	  * prints result
 	  */
 	 private static void printResult(){
-		 /**********************Print to console testing ********************/
 		 int avgL = bDocs[0].getTotalDocLength()/bDocs.length;
 		
 		 int print = 3;
@@ -107,9 +106,7 @@ public class Processor {
 	 					break;
 	 				}
 	 				c++;
-	 				
-	 			}	 		
-		 		
+	 			}	
 		 		break;
 			default:
 				break;
@@ -184,7 +181,6 @@ public class Processor {
 	 * @return
 	 */
 	private static void initializeBDocs(String docs[]){
-
 		for(int i  = 0; i < NUM_DOCS; i++){	 
 			 String id = findDocID(docs[i]);			 
 			 bDocs[i] = new BowDocument(id);
@@ -212,8 +208,7 @@ public class Processor {
 	 */
 	private static boolean isValid(String s){
 		String pattern = "[a-z][a-z]*";
-	    Pattern r = Pattern.compile(pattern);
-		 
+	    Pattern r = Pattern.compile(pattern);		 
 	     Matcher m = r.matcher(s);
 	     if (m.find()) {
 	        return true;
