@@ -7,8 +7,10 @@ import java.util.Collections;
 
 import org.tartarus.snowball.SnowballStemmer;
 
-/* Author : Harry Whittaker
- * Date   : 19/04/2017 
+/**
+ * 
+ * @author Harry Whittaker
+ * @since 24/04/2017
  * 
  * This class handles the pre-processing of the raw  XML documents.
  * This includes the extraction of the text with in the documents <text> tags,
@@ -16,12 +18,10 @@ import org.tartarus.snowball.SnowballStemmer;
  * converting to lower case,
  * the separation of this text in to terms   
  * and the stemming of these terms.
- * 
  */
-
 public class Preprocessor {
 	
-	//Snowball stemmer that will be used
+	//Snowball tartarus  stemmer that will be used
 	static SnowballStemmer stemmer;
 	
 	/**
@@ -38,8 +38,7 @@ public class Preprocessor {
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
-		}
-		 
+		}		 
 	}	
 	
 	/**
@@ -121,7 +120,7 @@ public class Preprocessor {
 			
 	 /**************************Stemming******************************************/
 	 /**
-	 *This stems a inputed term using the snowball stemmer
+	 *This stems a inputed term using the snowball tartarus stemmer
 	 * @param word a String
 	 * @return a stemmed form of given word
 	 * @throws IllegalAccessException 
