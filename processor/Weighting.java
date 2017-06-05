@@ -21,50 +21,30 @@ public class Weighting {
 	  * @param df documnt frequency hashmap
 	  * @return double BM25
 	  */
-	 public static double calculateBM25(BowDocument doc, int numDocs, String queryTerm, 
-			 				HashMap<String, Integer> df, ArrayList<String> query){
-		 double answer = 0.0;
+	 public static double calculateBM25(
+			 BowDocument doc,
+			 int numDocs,
+			 String queryTerm,
+			 HashMap<String, Integer> documentFrequency,
+			 ArrayList<String> query){		 
+		
+		 double qTermFreqInDoc = documentFrequency.get(queryTerm) != null ? documentFrequency.get(queryTerm) : 0.0;	 
 		 
-		 //total no docs in doc collection
-		 double N = numDocs;
-		 
-		 //doc freq of term
-		 double n;
-		 if(df.get(queryTerm) != null){
-			 n = df.get(queryTerm);
-		 }else{
-			 n = 0.0;
-		 }
-		 
-		 //term freq in given doc
-		 double f = doc.getTermCount(queryTerm);
-		 
-		 //term freq in query
-		 double qf = calcQueryFreq(query, queryTerm);
+		 double termFrequency = doc.getTermCount(queryTerm);
+		 double queryTermFrequency = calcQueryFreq(query, queryTerm);
+		 double docLength = doc.getNumTerms();
+		 double avgDocLength = doc.getTotalDocLength() / (double)numDocs;
 		 
 		 double k1 = 1.2;
 		 double k2 = 100.0;
-		 double b = 0.75;
+		 double b = 0.75;	
 		 
-		 //doc length of doc 
-		 double dl = doc.getNumTerms();
+		 double K = k1 * ((1 - b) + b * (docLength / avgDocLength));		 
+		 double f1 = 1 / ((qTermFreqInDoc  + 0.5) / (numDocs - qTermFreqInDoc + 0.5));		 
+		 double f2 = ((k1 + 1) * termFrequency) / (K + termFrequency);		 
+		 double f3 = ((k2 + 1) * queryTermFrequency) / (k2 + queryTermFrequency);
 		 
-		 //average doc length
-		 double avgdl = doc.getTotalDocLength() / (double)numDocs;
-		 
-		 //fraction 1,2,3
-		 double f1, f2, f3;
-		 
-		 double K = k1 * ((1-b) + b*(dl/avgdl));
-		 
-		 f1 = 1 / ((n  + 0.5)/(N - n + 0.5));
-		 
-		 f2 = ((k1 + 1) * f)/(K + f);
-		 
-		 f3 = ((k2 + 1) * qf) / (k2 + qf);
-		 		 
-		 answer = Math.log(f1) * (f2 * f3);		 		 
-		 return answer;
+		 return Math.log(f1) * (f2 * f3);
 	 }
 	 
 	 /**
