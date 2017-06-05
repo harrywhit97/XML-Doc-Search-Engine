@@ -1,153 +1,157 @@
 package processor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
-/* Author : Harry Whittaker
- * Date   : 19/04/2017 
+/**
  * 
- * This class can perform two different weightings; ifidf and BM25.
+ * @author Harry
+ * @since 05/06/2017
  * 
+ * performs tf*idf and BM25 weighting
  */
-
 public class Weighting {
 	
-	 /**************************Calculate BM25******************************************/
 	 /**
-	  * calcs BM25 weighting
+	  * Calculate BM25 weighting, relevance of a doc to a query term
+	  * where 1.0 is relevant and 0.0  is non-relevant
 	  * @param doc BowDocument
 	  * @param numDocs number of documents in dataset
 	  * @param queryTerm indiv term from query string
-	  * @param df documnt frequency hashmap
+	  * @param df document frequency hashmap
 	  * @return double BM25
 	  */
+	
+	/**
+	 * 
+	 * @param doc Bow Document to calculate bm25 score for
+	 * @param docs set of document that doc exists within
+	 * @param query query to use to judge doc's relevance
+	 * @return documents relevance score for query
+	 */
 	 public static double calculateBM25(
 			 BowDocument doc,
-			 int numDocs,
-			 String queryTerm,
-			 HashMap<String, Integer> documentFrequency,
-			 ArrayList<String> query){		 
-		
-		 double qTermFreqInDoc = documentFrequency.get(queryTerm) != null ? documentFrequency.get(queryTerm) : 0.0;	 
+			 ArrayList<BowDocument> docs,			
+			 ArrayList<String> query){				
 		 
-		 double termFrequency = doc.getTermCount(queryTerm);
-		 double queryTermFrequency = calcQueryFreq(query, queryTerm);
-		 double docLength = doc.getNumTerms();
-		 double avgDocLength = doc.getTotalDocLength() / (double)numDocs;
+		 double numDocs = (double) docs.size();
+		 double docLength = (double)doc.getNumTerms();
+		 double avgDocLength = (double)doc.getTotalDocLength() / numDocs;		
+		 double b = 0.75;		 
+		 double K = 1.2 * ((1 - b) + b * (docLength / avgDocLength));	
+		 double sum = 0.0;
 		 
-		 double k1 = 1.2;
-		 double k2 = 100.0;
-		 double b = 0.75;	
-		 
-		 double K = k1 * ((1 - b) + b * (docLength / avgDocLength));		 
-		 double f1 = 1 / ((qTermFreqInDoc  + 0.5) / (numDocs - qTermFreqInDoc + 0.5));		 
-		 double f2 = ((k1 + 1) * termFrequency) / (K + termFrequency);		 
-		 double f3 = ((k2 + 1) * queryTermFrequency) / (k2 + queryTermFrequency);
-		 
-		 return Math.log(f1) * (f2 * f3);
+		 for(String term : query){
+			 
+			 double df = calcDf(docs, term);			 
+			 double tf = calcTf(doc, term);			 
+			 double tfInQuery = calcTermFrequencyInQuery(query, term);
+			 sum += calcBM(numDocs, tf, df, K, tfInQuery);
+		 }	 
+		 return sum;
 	 }
 	 
 	 /**
-	  * 
+	  * Perform the BM25 equation
+	  * @param numDocs number of documents in set
+	  * @param tf term frequency of query term in doc
+	  * @param df doc frequency of query term
+	  * @param K 
+	  * @param tfInQuery term frequency of query term in query
+	  * @return BM25 score for a query term
+	  */
+	 private static double calcBM(
+			 double numDocs,
+			 double tf,
+			 double df,
+			 double K,
+			 double tfInQuery){
+		 
+		 return Math.log((numDocs - df + 0.5) / (df + 0.5)) *
+				 ((2.2 * tf) / (K + tf) * 101.0 / (100.0 + tfInQuery));
+	 }
+	 
+	 /**
+	  * Calculate the terms frequency in the query
 	  * @param query
 	  * @param term
-	  * @return
+	  * @return number of occurrences of term in query
 	  */
-	 private static int calcQueryFreq(ArrayList<String> query, String term){
-		 int count = 0;
+	 private static double calcTermFrequencyInQuery(
+			 ArrayList<String> query, 
+			 String term){
 		 
-		 for(String t : query){
-			 if(t.equals(term)){
-				 count++;
-			 }			 
-		 }		 
-		 return count;		 
+		 double termFrequencyInQuery = 0.0;
+		 
+		 for(String termf : query){
+			 if(term.equals(termf)){
+				 termFrequencyInQuery++;
+			 }
+		 }
+		 return termFrequencyInQuery;		 
 	 }
-	 
-	 /**************************Calculate tf*idf******************************************/
-	 
-	 /**
-	  * Calculate the tfIdf ranking for given bow documents
-	  * @param bDocs
-	  * @return sorted hashmap<String, Double> Term, tfidf ranking
-	  */
-	 public static HashMap<String, Double> claculateTfIdfAndSort(BowDocument bDocs[], HashMap<String, Integer> df){
-		 HashMap<String, Double> tfIdf = calculateTfIdf(bDocs[0], bDocs.length, calculateDF(bDocs));
-		 return SortMap.sortMapByValuesDouble(tfIdf); 		 
-	 }	 
-	 
-	 /**
-	 * Create document frequency hashmap
-	 *
-	 * @param docCollection - a Collection of BowDocument, i.e. HashMap<String,
-	 * BowDocument> of docId:aBowDocument
-	 * @return a HashMap<String, Integer> of term:df
-	 */
-	public static HashMap<String, Integer> calculateDF(BowDocument bDocs[]) {
-		HashMap<String, Integer> df = new HashMap<>();	
-		
-		for(BowDocument bDoc : bDocs){
-			for(String term : bDoc.getSortedTermList()){
-				if(df.containsKey(term)){
-					df.put(term, df.get(term) + 1);
-				}else{
-					df.put(term, 1);
-				}
-			}
-		}		
-		
-		return df;
-	}
-	 
+	 	 	
 	/**
-	 * @param aDoc - a BowDocument
-	 * @param noDocs - number of documents in given document set
-	 * @param dfs - a HashMap of term:df
-	 * @return a HashMap of term:tfidf for every term in a document
+	 * Calculate and normalize term frequency
+	 * @return normalised term frequency
 	 */
-	private static HashMap<String, Double> calculateTfIdf(BowDocument doc, int noDocs,
-		HashMap<String, Integer> df) {		
-		HashMap<String, Double> tfidfMap = new HashMap<>();
+	private static double calcTf(
+			BowDocument doc, 
+			String term){
 		
-		double numerator;
-		double denominator;	
+		double termFrequency = 0.0;
 		
-		double tfidf;		
-		double sum = 0;		
+		if(doc.containsTerm(term)){
+			termFrequency = doc.getTermCount(term);
+		}
 		
-		for(String term : doc.getMap().keySet()){
-			
-			int termFreq = doc.getMap().get(term);	
-			int docFreq = df.get(term);
-			numerator = Tfidf(termFreq, noDocs, docFreq);
-			
-			for(String termSum : doc.getMap().keySet()){
-				termFreq = doc.getMap().get(termSum);	
-				docFreq = df.get(termSum);
-				sum += (Math.pow(Tfidf(termFreq, noDocs, docFreq), 2.0));
-			}
-			denominator = Math.sqrt(sum);	
-						
-			tfidf = numerator / denominator;	
-			
-			
-			tfidfMap.put(term, tfidf);
-		}	
-		
-		
-		return tfidfMap;
+		return 1 + (Math.log10(termFrequency));		
 	}
 	
-	/** tf * idf
-	 * 
-	 * @param termFreq term frequency
-	 * @param noDocs number of documents in dataset
-	 * @param docFreq	document frequency of term
-	 * @return
+	/**
+	 * Calculate the document frequency(df)
+	 * of a specified term in a set of documents
+	 * @param docs ArrayList<BowDocument>
+	 * @param term	String term to use
+	 * @return double document frequency of term
 	 */
-	private static double Tfidf(int termFreq, int noDocs, int docFreq){
-		double tf = 1 + (Math.log10(termFreq));			
-		double idf = Math.log10(noDocs/docFreq);	
+	private static double calcDf(
+			ArrayList<BowDocument> docs,
+			String term){
+		
+		double df = 0.0;		
+		for(BowDocument doc : docs){
+			if(doc.containsTerm(term)){
+				df++;
+			}
+		}		
+		return df;
+	}
+	
+	/**
+	 * Calculate the inverse document frequency (idf) of a term and normalize
+	 * @param numberOfDocs total number of docs in a set
+	 * @param df document frequency of a term
+	 * @return normalized idf
+	 */
+	private static double calcIdf(double numberOfDocs, double df){		
+		return Math.log10(numberOfDocs / df);
+	}
+	
+	/**
+	 * Calculate the tfidf weighting
+	 * @param docs ArrayList<BowDocument> set of bow documents
+	 * @param doc a single BowDocument
+	 * @param term the term to use
+	 * @return tf * idf
+	 */
+	public static double calcTfidf(	
+			ArrayList<BowDocument> docs,
+			BowDocument doc,
+			String term){
+		
+		double tf = calcTf(doc, term);			
+		double idf = calcIdf(docs.size(), calcDf(docs, term));
+		
 		return tf * idf;
 	}
 }

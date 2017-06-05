@@ -2,24 +2,21 @@ package processor;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
-/* Author : Harry Whittaker
- * Date   : 19/04/2017 
+/**
+ * 
+ * @author harry
+ * @since 05/06/2017
  * 
  * This is the class for the bag of words documents.
  * It contains a hashmap of where the key is a term (String) and the value is the number of 
  * Occurrences of the term in the document.
- * 
  */
-
 public class BowDocument {
 	
-	private String documentID;
-	
-	//term freq map
-	private HashMap<String, Integer> map;	
+	private String documentID;		
+	private HashMap<String, Integer> terms;	
 	private static int totalDocLength = 0;	
 	private int numWords, numTerms;
 	
@@ -30,27 +27,21 @@ public class BowDocument {
 	 * call addTerm to add terms to map
 	 * @param docId
 	 */
-	BowDocument(String _documentID){		
+	BowDocument(String _documentID){	
+		
 		documentID = _documentID;
-		map = new HashMap<>();
+		terms = new HashMap<>();
 		numWords = 0;
 		numTerms = 0;
 	}
 
 	 /**
-	 * Add a term occurrence to the BOW representation
-	 * @param term
-	 */
-	public void addTerm(String term){
-		if(!map.containsKey(term)){
-			map.put(term, 1);
-		}else{
-			int temp = (int) map.get(term) + 1;
-			map.put(term, temp);
-		}
-		numTerms++;
-		totalDocLength++;
-	}
+	  * sets number of words for the document
+	  * @param _numWords number f words in doc
+	  */
+	 public void setNumWords(int _numWords){
+		 numWords = _numWords;
+	 }	
 	
 	/**
 	 *
@@ -59,11 +50,11 @@ public class BowDocument {
 	 * return 0 if the term does not appear in the document
 	 */
 	public int getTermCount(String term){	
-		if(!map.containsKey(term)){
-			return 0;
-		}else{
-			return map.get(term);
-		}		
+		
+		if(terms.containsKey(term)){
+			return terms.get(term);
+		}
+		return 0;
 	}
 	
 	/**
@@ -73,27 +64,12 @@ public class BowDocument {
 	public int getNumTerms(){
 		return numTerms;
 	}
-	
-	/**
-	 *
-	 * @return sorted list of all terms occurring in the document
-	 */
-	 public ArrayList<String>getSortedTermList(){
-		 ArrayList<String> list = new ArrayList<String>();
-		 		 
-		 for(String key : map.keySet()){
-			 list.add(key);
-		 }
-		 
-		 Collections.sort(list);		 
-		 return list;
-	 }
-	
+			 
 	 /**
 	  * @return map of term:freq pairs.
 	  */
-	 public HashMap<String, Integer> getMap(){
-		 return map;
+	 public HashMap<String, Integer> getTerms(){
+		 return terms;
 	 }
 	
 	 /**
@@ -105,11 +81,49 @@ public class BowDocument {
 	}
 	
 	/**
+	 * Get an arraylist that contains all of the terms with in the BOWDoc
+	 * @return ArrayList<String> 
+	 */
+	public ArrayList<String> getTermList(){
+		
+		ArrayList<String> termsList = new ArrayList<>();
+		termsList.addAll(terms.keySet());
+		return termsList;
+	}
+	
+	/**
+	 * checks if input terms exists in bowDoc
+	 * @param term term to check
+	 * @return true if terms exists, false in not
+	 */
+	public boolean containsTerm(String term){
+		if(terms.containsKey(term)){
+			return true;
+		}
+		return false;
+	}
+	 /**
+	 * Add a term occurrence to the BOW representation
+	 * @param term preprocessed  term to add to doc terms
+	 */
+	public void addTerm(String term){
+		
+		if(!terms.containsKey(term)){
+			terms.put(term, 1);
+		}else{
+			terms.put(term, terms.get(term) + 1);
+		}
+		numTerms++;
+		totalDocLength++;
+	}
+	
+	/**
 	 * Prints the map (both term and term count) 
 	 */
-	public void printMap(){
-		for(String key : map.keySet()){
-			System.out.println(key + " : " + map.get(key));
+	private void printTerms(){
+		
+		for(String key : terms.keySet()){
+			System.out.println(key + " : " + terms.get(key));
 		}
 		System.out.println("\n");
 	}
@@ -118,18 +132,12 @@ public class BowDocument {
 	 * prints doc description with map
 	 */
 	 public void  displayDocInfo(){
+		 
 		 System.out.println("Document " + documentID + " contains " + numTerms + " terms and has " + numWords + " words.");
-		 printMap();
+		 printTerms();
 	 }
 	 
-	 /**
-	  * sets number of words for the document
-	  * @param _numWords number f words in doc
-	  */
-	 public void setNumWords(int _numWords){
-		 numWords = _numWords;
-	 }
-	 
+	 //DELETE?
 	 /**
 	  * Accessor for docLength
 	  * @return
