@@ -27,7 +27,10 @@ public class Preprocessor {
 	 * @param terms	String array list of terms
 	 * @return terms array list with all words from stopWords removed
 	 */
-	public static ArrayList<String> removeStopWords(String[] stopWords, ArrayList<String> terms){		
+	public static ArrayList<String> removeStopWords(
+			String[] stopWords, 
+			ArrayList<String> terms){
+		
 		for(String stopWord : stopWords){
 			while(terms.contains(stopWord)){
 				terms.remove(stopWord);

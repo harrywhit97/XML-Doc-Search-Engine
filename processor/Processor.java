@@ -19,11 +19,8 @@ import java.util.*;
  * 
  */
 public class Processor {
-	//number of documents
-	final static int NUM_DOCS = 10;
 	
 	//location of folder containing docs folder and stopwords file
-	final static String FILE_LOCATION = "C:/Users/harry/workspace/CAB431/";	
 	
 	private static String[] stopWords;	
 	
@@ -237,66 +234,26 @@ public class Processor {
 	}
 		
 	/*******************************read documents*******************************/	
-	/**
-	 * Gets the stop word list from the internally specified file
-	 * @return String array where array[0] = stop word 1 etc
-	 */
-	public static void getStopWords(){
-		String thisLine = null;
-		String line = null;
-		String dirPath = FILE_LOCATION + "stopWords.txt";
 		
-		try {  		      
-		     // open input stream test.txt for reading purpose.
-		     BufferedReader br = new BufferedReader(new FileReader(new File(dirPath)));
-		     
+	/**
+	 * 
+	 * @param location directory path of queries file
+	 * @return single String with all raw queries in it
+	 */
+	private static String getDocString(File file){
+		String thisLine = null;
+		String line = "";
+		
+		try {
+		     BufferedReader br = new BufferedReader(new FileReader(file));
+		     br.readLine();
 		     while ((thisLine = br.readLine()) != null) {
-		    	 line += thisLine;
+	    		 line += thisLine;	   
 		     }
 		     br.close();
 		  } catch(Exception e) {
 		     e.printStackTrace();
 		  }
-		
-		String words[] = line.split(",");	
-		words[0] = words[0].replace("null", "");	
-		stopWords = words;
-	}
-		
-	/**
-	 * Gets all of the documents in the internally specified location 
-	 * @return String array where array[0] = document 0 etc
-	 */
-	public static String[] getDocuments(){
-		
-		String dirPath = FILE_LOCATION + "dataScource/";
-		String thisLine = "";
-	    
-	    File dir = new File (dirPath);
-	    File[] dirListing = dir.listFiles();
-	    
-	    String documents[] = new String[NUM_DOCS];
-	    int count = 0;
-	    
-	    if(dirListing != null){
-	    	
-	    //Iterate through docs	
-	  	  for(File child : dirListing){
-	  		  try {  		      
-	  		         // open input stream test.txt for reading purpose.
-	  		         BufferedReader br = new BufferedReader(new FileReader(child));
-	  		         
-	  		         while ((thisLine = br.readLine()) != null) {
-	  		        	 documents[count] += thisLine;
-	  		         }
-	  		         br.close();
-	  		      } catch(Exception e) {
-	  		         e.printStackTrace();
-	  		      }
-	  		  count++;
-	  	  }
-	    }else{System.out.println("ERROR NO DATA");}
-	    
-		return documents;
-		}
+		return line;
+	}	
 }
