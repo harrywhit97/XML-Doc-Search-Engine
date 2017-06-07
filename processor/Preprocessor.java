@@ -1,6 +1,7 @@
 package processor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,13 +45,14 @@ public class Preprocessor {
 	 * @param doc String containing raw document
 	 * @return String of edited text section
 	 */
- 	public static String[] tokenize(
+ 	public static ArrayList<String> tokenize(
  			String rawDoc){
  		
 		String docText = getText(rawDoc);
 		docText = removeNonAlphabeticalChars(docText);	
-	
-		return docText.split(" ");
+		ArrayList<String> tokens = new ArrayList<>();
+		Collections.addAll(tokens, docText.split(" "));
+		return tokens;
 	}
 	
 	/**

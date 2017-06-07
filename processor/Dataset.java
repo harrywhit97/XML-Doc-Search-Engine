@@ -2,11 +2,9 @@ package processor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import processor.*;
+import java.util.TreeMap;
 
 public class Dataset {
-	private int numDocs;
 	private ArrayList<BowDocument> docs;
 	private String title;
 	
@@ -35,7 +33,6 @@ public class Dataset {
 					throws Exception{
 		
 		docs.add(doc);	
-		numDocs++;
 	}
 	
 	/**
@@ -44,7 +41,7 @@ public class Dataset {
 	public void displayDocIds(){
 		
 		for(BowDocument doc : docs){
-			System.out.println("\t" + doc.getDocID());
+			System.out.println("\t" + doc.toString());
 		}
 	}
 	
@@ -78,7 +75,7 @@ public class Dataset {
 	 * @param map HashMap<String, Double> where key is doc name and value is BM25
 	 */	
 	public void setPosNeg(
-			HashMap<String, Double> map){		
+			TreeMap<String, Double> map){		
 		
 		positive = new HashMap<BowDocument, Double>();
 		negative = new HashMap<BowDocument, Double>();
@@ -111,7 +108,7 @@ public class Dataset {
 	 */
 	private BowDocument getDocByName(String name) throws Exception{
 		for(BowDocument doc : docs){
-			if(doc.getDocID().equals(name)){
+			if(doc.toString().equals(name)){
 				return doc;
 			}
 		}
@@ -128,13 +125,13 @@ public class Dataset {
 		System.out.println("D+");
 		System.out.println(title);		
 		for(BowDocument doc : positive.keySet()){
-			System.out.println(rank++ +"\t" + doc.getDocID() + "\t" + positive.get(doc));
+			System.out.println(rank++ +"\t" + doc.toString() + "\t" + positive.get(doc));
 		}
 		
 		System.out.println("\nD-");
 		System.out.println(title);
 		for(BowDocument doc : negative.keySet()){
-			System.out.println(rank++ +"\t" + doc.getDocID() + "\t" + negative.get(doc));
+			System.out.println(rank++ +"\t" + doc.toString() + "\t" + negative.get(doc));
 		}
 	}
 	

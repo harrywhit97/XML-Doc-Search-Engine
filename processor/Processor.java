@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.tartarus.snowball.SnowballStemmer;
 import java.util.*;
 
 /**
@@ -19,46 +20,39 @@ import java.util.*;
  * 
  */
 public class Processor {
-	
-	//location of folder containing docs folder and stopwords file
-	
-	private static String[] stopWords;	
-	
-	private static BowDocument bDocs[] = new BowDocument[NUM_DOCS];
-	
-	private static double bm[]; 
-	
-	//Weighing hashmaps
-	private static HashMap<String, Integer> df;
-	private static HashMap<String, Double> tfIdf;
-	private static HashMap<BowDocument, Double> docsAndBM;
-	
-	//Query
-	private static String query;
-	private static ArrayList<String> queryTerms;	 
+	private static final String STOP_WORDS_FILE = "./stopWords.txt";
+	private static final String XML_DOCUMENTS = "./documents/";
 	 
-	 public static void main(String[] args) throws Exception {		 
+	 public static void main(String[] args) throws Exception {	 
 		
-		 String docs[] = getDocuments();			 
-		 getStopWords();
-		 initializeBDocs(docs);		 
-		 addDocsToBdocs(docs); 		 
-		 bDocs[0].displayDocInfo();
-		 calcIfidf();
+		 SnowballStemmer stemmer = initStemmer(args);		
+		 String[] stopWords = getStopWords(STOP_WORDS_FILE);
+		 Dataset set = makeDataSet(XML_DOCUMENTS, stopWords, stemmer);
+		 		 
 		 
 		 Scanner reader = new Scanner(System.in);		 
 		 
 		 while(true){
-			 getQuery(reader);		
-			 calcBM25();
-			 printResult();	
+			 ArrayList<String> queryTerms = getQuery(reader, stopWords, stemmer);		
+			 TreeMap<String, Double> bmScores = calcBM25(set, queryTerms);
+			 set.setPosNeg(bmScores);
+			 set.displaySetInfo();
 			 System.out.println();
 		 }			
 	}	
 	 
+	 private static SnowballStemmer initStemmer(
+			 String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
+		 
+		 Class stemClass = Class.forName("org.tartarus.snowball.ext." +
+					args[0] + "Stemmer");
+		 SnowballStemmer stemmer = (SnowballStemmer) stemClass.newInstance();
+		 return stemmer;
+	 }
+	 
 	 /**
 	  * prints result
-	  */
+	  *
 	 private static void printResult(){
 		 int avgL = bDocs[0].getTotalDocLength()/bDocs.length;
 		
@@ -110,40 +104,26 @@ public class Processor {
 		 } 
 	 }
 	 /*******************************Weighting*******************************/
-	 /**
-	  * calculates the ifidf weighting and saves to ifIdf hashmap	 
-	  */
-	 private static void calcIfidf(){
-		 df = Weighting.calculateDF(bDocs); 		 
-		 tfIdf = Weighting.claculateTfIdfAndSort(bDocs, df);
-	 }
+
 	 
 	 /**
 	  * Calculates BM25 weighting and saves to docs and bm hashmap
 	  */
-	 private static void calcBM25(){
-		 bm= initBm();		 
+	 private static TreeMap<String, Double> calcBM25(
+			 Dataset set, 
+			 ArrayList<String> query){
 		 
-		 //calc bm25
-		 for(int i = 0; i < queryTerms.size(); i++){
-			 for(int d = 0; d < bDocs.length; d++){
-				 double b = Weighting.calculateBM25(bDocs[d], bDocs.length, queryTerms.get(i), df, queryTerms);
-				 bm[d] += b;				 
-			 }
-		 }		 
-		 docsAndBM = new HashMap<>();
-		 
-		 for(int i = 0; i < NUM_DOCS; i++){
-			 docsAndBM.put(bDocs[i], bm[i]);
+		 TreeMap<String, Double> bmScores = new TreeMap<>();
+		 for(BowDocument doc : set.getDocs()){
+			 bmScores.put(doc.toString(), Weighting.calculateBM25(doc, set.getDocs(), query));
 		 }
-		 
-		 docsAndBM = SortMap.sortBowDoc(docsAndBM);
+		 return bmScores;
 	 }
 	 
 	 /**
 	  * 
 	  * @return double array of size numDocs and sets all elements to 0.0
-	  */
+	  *
 	 private static double[] initBm(){
 		//set bm values to zero
 		 double bm[]= new double[NUM_DOCS];
@@ -157,69 +137,99 @@ public class Processor {
 	 /**
 	  * Prompts user to input query then saves it
 	  */
-	 private static void getQuery(Scanner reader){		
+	 private static ArrayList<String> getQuery(
+			 Scanner reader, 
+			 String[] stopWords,
+			 SnowballStemmer stemmer){		
+		 
 		 System.out.print("Enter query: ");
-		 query = reader.nextLine();			 	
-		 queryTerms =  Preprocessor.tokenizeStemAndStopDoc(query, stopWords);
+		 String query = reader.nextLine();		
+		 ArrayList<String> tokens = new ArrayList<>();
+		 tokens =  Preprocessor.tokenize(query);
+		 tokens =  Preprocessor.removeStopWords(stopWords, tokens);
+		 return stemTerms(tokens, stemmer);
+		 
 	 }
 	 
 	 /**************************BowDocument manipulation**************************/
-	 private static void addDocsToBdocs(String[] docs){
-		 for(int i = 0; i < NUM_DOCS; i++){
-			 ArrayList<String> terms = Preprocessor.tokenizeStemAndStopDoc(docs[i], stopWords);
-			 addTerms(terms, bDocs[i++]);
-		 }	
-	 }
-	 	 
-	/**
-	 * Initializes array of BowDocument
-	 * @param docs array of dcrings representing the documents
-	 * @param bDocs array of bdocs
-	 * @return
-	 */
-	private static void initializeBDocs(String docs[]){
-		for(int i  = 0; i < NUM_DOCS; i++){	 
-			 String id = findDocID(docs[i]);			 
-			 bDocs[i] = new BowDocument(id);
-		 }	
-	}
+	 
+	 private static Dataset makeDataSet(
+			 String docsLocation, 
+			 String[] stopWords, 
+			 SnowballStemmer stemmer){
 		 
-	/**
-	 * Adds terms to BowDocument 
-	 * @param tokens Array of terms to be added to bdoc
-	 * @param bDoc BowDocument
-	 */
-	public static void addTerms(ArrayList<String> terms, BowDocument bDoc){	
+		Dataset set;	
+		File docsFolder = new File(docsLocation);
+		File[] docs = docsFolder.listFiles();
 		
-		for(String term : terms){			
-			if(isValid(term)){
-				bDoc.addTerm(term);
-			}
+		set = new Dataset(docsFolder.getName());
+		
+		for(File doc : docs){									
+			try {
+				set.addDoc(buildBdoc(doc, stopWords, stemmer));
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+			}								
 		}
-	}	
+		return set;
+	 }
+	 
+	 /**
+		 * Make a BowDocument from a XML file
+		 * @param doc	XML file to make BowDucument form
+		 * @return	BowDocument
+	 * @throws Exception 
+		 */
+		private static BowDocument buildBdoc(
+				File doc, 
+				String[] stopWords, 
+				SnowballStemmer stemmer) 
+						throws Exception{
 			
-	/**
-	 * Checks that term is a valid term
-	 * @param s term
-	 * @return
-	 */
-	private static boolean isValid(String s){
-		String pattern = "[a-z][a-z]*";
-	    Pattern r = Pattern.compile(pattern);		 
-	     Matcher m = r.matcher(s);
-	     if (m.find()) {
-	        return true;
-	     }else {
-	        return false;
-	     }     
-	}
-	
+			String rawDoc = getDocString(doc);
+			String docID = findDocID(rawDoc);	
+			
+			BowDocument bDoc = new BowDocument(docID);	
+			
+			ArrayList<String> tokens = Preprocessor.tokenize(rawDoc);				
+			int numWords = tokens.size();
+			
+			tokens = Preprocessor.removeStopWords(stopWords, tokens);
+			ArrayList<String> terms = stemTerms(tokens, stemmer);												
+			
+			for(String term : terms){
+				if(!term.equals("")){
+					bDoc.addTerm(term);
+				}else{
+					numWords--;
+				}
+			}
+			bDoc.setNumWords(numWords);	
+			return bDoc;
+		}
+		
+		private static ArrayList<String> stemTerms(
+				ArrayList<String>tokens, 
+				SnowballStemmer stemmer){
+			
+			ArrayList<String> terms = new ArrayList<>();
+			for(String term : tokens){
+				terms.add(Preprocessor.stemTerm(term, stemmer));
+			}	
+			return terms;
+		}
+	 
+		
 	/**
 	 * Finds the doc ID of inputed document	
 	 * @param doc String containing unedited document
 	 * @return doc id [0-9]* or null id no id was found
 	 */
-	private static String findDocID(String doc){
+	private static String findDocID(
+			String doc) 
+					throws Exception{
+		
 		String pattern = "itemid=\"[0-9]*";
 	    Pattern r = Pattern.compile(pattern);
 		 
@@ -228,25 +238,33 @@ public class Processor {
 	     if (m.find()) {
 	        temp = doc.substring(m.start() + 8, m.end());
 	     }else {
-	        System.out.println("NO MATCH");
+	        throw new Exception("No Doc id found");
 	     }     
 	     return temp;
 	}
+	
+	 
+	
+	public static String[] getStopWords(
+			String file){
 		
-	/*******************************read documents*******************************/	
+		String rawString = getDocString(new File(file));
+		return rawString.split(",");
+	}
 		
 	/**
 	 * 
 	 * @param location directory path of queries file
 	 * @return single String with all raw queries in it
 	 */
-	private static String getDocString(File file){
+	private static String getDocString(
+			File file){
+		
 		String thisLine = null;
 		String line = "";
 		
 		try {
 		     BufferedReader br = new BufferedReader(new FileReader(file));
-		     br.readLine();
 		     while ((thisLine = br.readLine()) != null) {
 	    		 line += thisLine;	   
 		     }

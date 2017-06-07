@@ -76,7 +76,7 @@ public class BowDocument {
 	  * get the document ID
 	  * @return documnetID
 	  */
-	public String getDocID(){
+	public String toString(){
 		return documentID;
 	}
 	
