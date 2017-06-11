@@ -20,7 +20,25 @@ import org.tartarus.snowball.SnowballStemmer;
  * and the stemming of these terms.
  */
 public class Preprocessor {
+	
+	//Snowball stemmer that will be used
+		private static SnowballStemmer stemmer;
+		
+		/**
+		 * Class constructor
+		 */
+		public Preprocessor(){
 			
+			//Initialize stemmer
+			 Class<?> stemClass;
+			try {
+				stemClass = Class.forName("org.tartarus.snowball.ext.englishStemmer");
+				stemmer = (SnowballStemmer)stemClass.newInstance();
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+			}		 
+		}
 	
 	/**
 	 * Removes all words in stop words array from terms array list
@@ -100,13 +118,17 @@ public class Preprocessor {
 	 * @param term a String
 	 * @param stemmer to be used
 	 * @return a stemmed form of given word
+	 * @throws Exception 
 	 */
-	public static String stemTerm(
-			String term, 
-			SnowballStemmer stemmer) {		
+	public String stemTerm(
+			String term) throws Exception {		
+		if(stemmer != null){
+			stemmer.setCurrent(term);		
+			stemmer.stem();
+		}else{
+			throw new Exception("Stemmer not initialised");
+		}
 		
-		stemmer.setCurrent(term);		
-		stemmer.stem();
 		
 		return stemmer.getCurrent();
 	}	 

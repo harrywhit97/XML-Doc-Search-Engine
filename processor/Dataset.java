@@ -79,21 +79,20 @@ public class Dataset {
 		
 		positive = new HashMap<BowDocument, Double>();
 		negative = new HashMap<BowDocument, Double>();
-		double threshold = 2.2;
-				
-		for(String key : map.keySet()){			
-			if(map.get(key) > threshold){				
-				try {
+		double percentagePos = 20;
+		double numPosDocs = ((double)map.size() / 100.0) * percentagePos;
+		double currentNumPosDocs = 0.0;
+		for(String key : map.keySet()){	
+			
+			try {
+				if(currentNumPosDocs++ < numPosDocs){	
 					positive.put(getDocByName(key), map.get(key));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}else{
-				try {
+		
+				}else{
 					negative.put(getDocByName(key), map.get(key));
-				} catch (Exception e) {
-					e.printStackTrace();
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		positive = SortMap.sortBowDoc(positive);
@@ -118,7 +117,7 @@ public class Dataset {
 	/**
 	 * Print the weightings hash map
 	 */
-	public void printMap(){
+	public void printWeightedMap(){
 		String title = "rank\t Doc\tWeight bm25";
 		int rank = 1;
 		
@@ -151,6 +150,10 @@ public class Dataset {
 		return negative;
 	}
 	
+	/**
+	 * Get the positive documents of this set
+	 * @return Array of BowDocuments that are positive
+	 */
 	public BowDocument[] getPosDocs(){
 		BowDocument[] docs = new BowDocument[positive.size()];
 		int i = 0;
@@ -160,6 +163,10 @@ public class Dataset {
 		return docs;
 	}
 	
+	/**
+	 * Get the negative documents of this set
+	 * @return Array of BowDocuments that are negative
+	 */
 	public BowDocument[] getNegDocs(){
 		BowDocument[] docs = new BowDocument[negative.size()];
 		int i = 0;

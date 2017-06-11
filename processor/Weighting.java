@@ -66,7 +66,7 @@ public class Weighting {
 			 double K,
 			 double tfInQuery){
 		 
-		 return Math.log((numDocs - df + 0.5) / (df + 0.5)) *
+		 return (Math.log((numDocs - df + 0.5) / (df + 0.5))) *
 				 ((2.2 * tf) / (K + tf) * 101.0 / (100.0 + tfInQuery));
 	 }
 	 
@@ -100,10 +100,10 @@ public class Weighting {
 		
 		double termFrequency = 0.0;
 		
-		if(doc.containsTerm(term)){
-			termFrequency = doc.getTermCount(term);
-		}
+		if(doc.containsTerm(term)) termFrequency = doc.getTermCount(term);			
+
 		
+		if(termFrequency == 0.0) return termFrequency;
 		return 1 + (Math.log10(termFrequency));		
 	}
 	

@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * 
  * @author Harry Whittaker
- * @since 24/04/2017
+ * @since 09/06/2017
  *
  * This class handles the main computation of this xml document search engine.
  * This works for XML documents with <title> and <text> tags.
@@ -25,7 +25,7 @@ public class Processor {
 	 
 	 public static void main(String[] args) throws Exception {	 
 		
-		 SnowballStemmer stemmer = initStemmer(args);		
+		 Preprocessor stemmer = new Preprocessor();
 		 String[] stopWords = getStopWords(STOP_WORDS_FILE);
 		 Dataset set = makeDataSet(XML_DOCUMENTS, stopWords, stemmer);
 		 		 
@@ -33,78 +33,27 @@ public class Processor {
 		 Scanner reader = new Scanner(System.in);		 
 		 
 		 while(true){
-			 ArrayList<String> queryTerms = getQuery(reader, stopWords, stemmer);		
-			 TreeMap<String, Double> bmScores = calcBM25(set, queryTerms);
-			 set.setPosNeg(bmScores);
-			 set.displaySetInfo();
-			 System.out.println();
-		 }			
+			System.out.println("Enter one of the following options:"
+						+ "\n1	:	 to query dataset"
+		 				+ "\n2	:	 to find optimal query for dataset");
+			
+			String input = reader.nextLine();
+			
+			if(input.equals("1")){			
+				
+				 ArrayList<String> queryTerms = getQuery(reader, stopWords, stemmer);		
+				 TreeMap<String, Double> bmScores = calcBM25(set, queryTerms);
+				 set.setPosNeg(bmScores);
+				 set.printWeightedMap();
+				 System.out.println();
+			}else if(input.equals("2")){
+				
+				 System.out.println("option 2");
+			}else System.out.println("invalid input");			
+						
+		 }
+		 
 	}	
-	 
-	 private static SnowballStemmer initStemmer(
-			 String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
-		 
-		 Class stemClass = Class.forName("org.tartarus.snowball.ext." +
-					args[0] + "Stemmer");
-		 SnowballStemmer stemmer = (SnowballStemmer) stemClass.newInstance();
-		 return stemmer;
-	 }
-	 
-	 /**
-	  * prints result
-	  *
-	 private static void printResult(){
-		 int avgL = bDocs[0].getTotalDocLength()/bDocs.length;
-		
-		 int print = 3;
-		 
-		 switch(print){		 	
-		 	case 0:
-		 		 int count = 0;
-				 int max = 20;
-				 
-				 System.out.println("Document "+ bDocs[0].getDocID() + " contains " + bDocs[0].getNumTerms() + " terms.");
-				 for(String term : tfIdf.keySet()){
-					 System.out.println(term + " : " + tfIdf.get(term));
-					 if(count >= max-1){
-						 break;
-					 }
-					 count++;			 
-				 }	
-				 break;
-		 	case 1:
-		 		System.out.println("DocID \t docLength  avgDocLength");
-		 		for(BowDocument bDoc : bDocs){
-		 			System.out.println(bDoc.getDocID() + "   " + bDoc.getNumTerms() + " \t       " + bDoc.getTotalDocLength()/bDocs.length );
-		 		}
-		 		
-		 		break;
-		 	case 2:
-		 		System.out.println("Average document length "+ avgL + " for query : " + query);
-	 			for(BowDocument d : docsAndBM.keySet()){
-	 				System.out.println("Document : " + d.getDocID() +
-	 						", Length : " + d.getNumTerms() + ", BM25 score: " + docsAndBM.get(d));
-	 			}	 		
-		 		
-		 		break;
-		 	case 3:
-		 		System.out.println("For query "+ query +", three recommended relevant documents and their BM25 score:");
-		 		int c = 0;
-	 			for(BowDocument d : docsAndBM.keySet()){
-	 				if(c < 3){
-	 					System.out.println("Document : " + d.getDocID() +" : " +  docsAndBM.get(d));
-	 				}else{
-	 					break;
-	 				}
-	 				c++;
-	 			}	
-		 		break;
-			default:
-				break;
-		 } 
-	 }
-	 /*******************************Weighting*******************************/
-
 	 
 	 /**
 	  * Calculates BM25 weighting and saves to docs and bm hashmap
@@ -118,29 +67,16 @@ public class Processor {
 			 bmScores.put(doc.toString(), Weighting.calculateBM25(doc, set.getDocs(), query));
 		 }
 		 return bmScores;
-	 }
+	 } 
 	 
-	 /**
-	  * 
-	  * @return double array of size numDocs and sets all elements to 0.0
-	  *
-	 private static double[] initBm(){
-		//set bm values to zero
-		 double bm[]= new double[NUM_DOCS];
-		 for(@SuppressWarnings("unused") double d : bm){
-			 d = 0.0;
-		 }
-		 return bm;
-	 }
-	 
-		/*******************************Query*******************************/
 	 /**
 	  * Prompts user to input query then saves it
+	 * @throws Exception 
 	  */
 	 private static ArrayList<String> getQuery(
 			 Scanner reader, 
 			 String[] stopWords,
-			 SnowballStemmer stemmer){		
+			 Preprocessor stemmer) throws Exception{		
 		 
 		 System.out.print("Enter query: ");
 		 String query = reader.nextLine();		
@@ -151,12 +87,17 @@ public class Processor {
 		 
 	 }
 	 
-	 /**************************BowDocument manipulation**************************/
-	 
+	 /**
+	  * Make a dataset and populate it with BowDocuments from a inputed folder
+	  * @param docsLocation folder contain documents to put in to dataset
+	  * @param stopWords array of stop words
+	  * @param stemmer Preprocessor object to be used to stem terms
+	  * @return populated Dataset  
+	  */
 	 private static Dataset makeDataSet(
 			 String docsLocation, 
 			 String[] stopWords, 
-			 SnowballStemmer stemmer){
+			 Preprocessor stemmer){
 		 
 		Dataset set;	
 		File docsFolder = new File(docsLocation);
@@ -164,62 +105,70 @@ public class Processor {
 		
 		set = new Dataset(docsFolder.getName());
 		
-		for(File doc : docs){									
-			try {
-				set.addDoc(buildBdoc(doc, stopWords, stemmer));
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
-				e.printStackTrace();
-			}								
+		for(File doc : docs){	
+			if(!doc.getName().contains("._")){
+				try {
+					set.addDoc(buildBdoc(doc, stopWords, stemmer));
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+					e.printStackTrace();
+				}
+			}											
 		}
 		return set;
 	 }
 	 
-	 /**
-		 * Make a BowDocument from a XML file
-		 * @param doc	XML file to make BowDucument form
-		 * @return	BowDocument
-	 * @throws Exception 
-		 */
-		private static BowDocument buildBdoc(
-				File doc, 
-				String[] stopWords, 
-				SnowballStemmer stemmer) 
-						throws Exception{
-			
-			String rawDoc = getDocString(doc);
-			String docID = findDocID(rawDoc);	
-			
-			BowDocument bDoc = new BowDocument(docID);	
-			
-			ArrayList<String> tokens = Preprocessor.tokenize(rawDoc);				
-			int numWords = tokens.size();
-			
-			tokens = Preprocessor.removeStopWords(stopWords, tokens);
-			ArrayList<String> terms = stemTerms(tokens, stemmer);												
-			
-			for(String term : terms){
-				if(!term.equals("")){
-					bDoc.addTerm(term);
-				}else{
-					numWords--;
-				}
-			}
-			bDoc.setNumWords(numWords);	
-			return bDoc;
-		}
+ 	/**
+	* Make a BowDocument from a XML file
+	* @param doc	XML file to make BowDucument form
+	* @return	BowDocument
+	* @throws Exception 
+	*/
+	private static BowDocument buildBdoc(
+			File doc, 
+			String[] stopWords, 
+			Preprocessor stemmer) 
+					throws Exception{
 		
-		private static ArrayList<String> stemTerms(
-				ArrayList<String>tokens, 
-				SnowballStemmer stemmer){
-			
-			ArrayList<String> terms = new ArrayList<>();
-			for(String term : tokens){
-				terms.add(Preprocessor.stemTerm(term, stemmer));
-			}	
-			return terms;
+		String rawDoc = getDocString(doc);
+		String docID = findDocID(rawDoc);	
+		
+		BowDocument bDoc = new BowDocument(docID);	
+		
+		ArrayList<String> tokens = Preprocessor.tokenize(rawDoc);				
+		int numWords = tokens.size();
+		
+		tokens = Preprocessor.removeStopWords(stopWords, tokens);
+		ArrayList<String> terms = stemTerms(tokens, stemmer);												
+		
+		for(String term : terms){
+			if(!term.equals("")){
+				bDoc.addTerm(term);
+			}else{
+				numWords--;
+			}
 		}
-	 
+		bDoc.setNumWords(numWords);	
+		return bDoc;
+	}
+		
+	/**
+	 * Stem a String arraylist of tokens
+	 * @param tokens ArrayList<String> of tokens
+	 * @param stemmer Preprocessor object to be used as stemmer
+	 * @return ArrayList<String> stemmed terms
+	 * @throws Exception is stemmer is not initiazed
+	 */
+	private static ArrayList<String> stemTerms(
+			ArrayList<String>tokens, 
+			Preprocessor stemmer) throws Exception{
+		
+		ArrayList<String> terms = new ArrayList<>();
+		for(String term : tokens){
+			terms.add(stemmer.stemTerm(term));
+		}	
+		return terms;
+	}	 
 		
 	/**
 	 * Finds the doc ID of inputed document	
@@ -243,8 +192,11 @@ public class Processor {
 	     return temp;
 	}
 	
-	 
-	
+	/**
+	 * Get a list of stop words contained in a 	comma separated file
+	 * @param file containing the stop words
+	 * @return String array of stop words
+	 */
 	public static String[] getStopWords(
 			String file){
 		
