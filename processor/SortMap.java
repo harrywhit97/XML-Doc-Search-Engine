@@ -19,7 +19,7 @@ public class SortMap {
 	 * @param aMap
 	 * @return
 	 */
-	public static HashMap<String, Double> sortMapByValuesDouble(Map<String, Double> aMap) {
+	public static HashMap<String, Double> sortMapValueStringDouble(Map<String, Double> aMap) {
         
         Set<Entry<String,Double>> mapEntries = aMap.entrySet();       
                 

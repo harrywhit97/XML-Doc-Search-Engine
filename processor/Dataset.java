@@ -2,7 +2,6 @@ package processor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.TreeMap;
 
 public class Dataset {
 	private ArrayList<BowDocument> docs;
@@ -75,7 +74,7 @@ public class Dataset {
 	 * @param map HashMap<String, Double> where key is doc name and value is BM25
 	 */	
 	public void setPosNeg(
-			TreeMap<String, Double> map){		
+			HashMap<String, Double> map){		
 		
 		positive = new HashMap<BowDocument, Double>();
 		negative = new HashMap<BowDocument, Double>();

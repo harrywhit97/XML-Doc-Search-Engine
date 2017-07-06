@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.tartarus.snowball.SnowballStemmer;
 import java.util.*;
 
 /**
@@ -42,27 +41,117 @@ public class Processor {
 			if(input.equals("1")){			
 				
 				 ArrayList<String> queryTerms = getQuery(reader, stopWords, stemmer);		
-				 TreeMap<String, Double> bmScores = calcBM25(set, queryTerms);
+				 HashMap<String, Double> bmScores = SortMap.sortMapValueStringDouble(calcBM25(set, queryTerms));
 				 set.setPosNeg(bmScores);
 				 set.printWeightedMap();
 				 System.out.println();
 			}else if(input.equals("2")){
+
+				int numWordsInQuery = 5;
+				ArrayList<String> queryTerms = makeOptimalQuery(set, numWordsInQuery);
+				System.out.println("Optimal query : " + makeOptimalQuery(set, numWordsInQuery) + "\n");
+
+				HashMap<String, Double> bmScores = SortMap.sortMapValueStringDouble(calcBM25(set, queryTerms));
+				set.setPosNeg(bmScores);
+				set.printWeightedMap();
+				System.out.println();
 				
-				 System.out.println("option 2");
-			}else System.out.println("invalid input");			
-						
-		 }
-		 
+			}else System.out.println("invalid input");								
+		 }		 
 	}	
+	 
+	/**
+	* used tfidf to make queries from document 
+	* @return Sting[] new queries
+	*/
+	public static ArrayList<String> makeOptimalQuery(Dataset set, int numTermsInQuery){		
+		HashMap<String, Double> setTermIFIDF = buildTFIDFMap(set);		
+		setTermIFIDF = SortMap.sortMapValueStringDouble(setTermIFIDF);
+		return getQueryFromTFIDFMap(setTermIFIDF, numTermsInQuery);
+	}
+	
+	/**
+	 * Builds the tfidf hashmap where the key is a term and the value 
+	 * is the tfidf score
+	 * @param set Dataset to use
+	 * @param setTermList ArrayList<String> of terms in dataset
+	 * @return HashMap<String, Double>
+	 */
+	private static HashMap<String, Double> buildTFIDFMap(Dataset set){
+		HashMap<String, Double> setTermIFIDF = new HashMap<>();
+		ArrayList<String> setTermList = buildSetTermList(set);
+		
+		//build map
+		for(BowDocument doc : set.getDocs()){
+			for(String term : setTermList){
+				
+				double score = Weighting.calcTfidf(set.getDocs(), doc, term);
+				
+				if(setTermIFIDF.containsKey(term)){
+					setTermIFIDF.put(term, setTermIFIDF.get(term) + score);
+				}else{
+					setTermIFIDF.put(term, score);
+				}
+			}
+		}
+		
+		//average scores
+		for(String term : setTermIFIDF.keySet()){
+			setTermIFIDF.put(term, setTermIFIDF.get(term) / (double)set.getDocs().size() );
+		}		
+		return setTermIFIDF;
+	}
+	
+	/**
+	 * Adds the terms in the map with the highest tfidf score to a string
+	 * and returns the new query
+	 * @param setTermIFIDF HashMap<String,  Double> where key is term and value is tfidf score
+	 * @param numTermsToAddToQuery
+	 * @return String newQuery of term length specified
+	 */
+	private static ArrayList<String> getQueryFromTFIDFMap(HashMap<String, Double> setTermIFIDF, int numTermsToAddToQuery){
+		int numTermsInQuery = 0;
+		
+		ArrayList<String> queryTerms = new ArrayList<>();
+		
+		for(String term : setTermIFIDF.keySet()){
+			queryTerms.add(term);
+			if(numTermsInQuery >= numTermsToAddToQuery){
+				break;
+			}else{
+				numTermsInQuery++;
+			}
+		}		
+		return queryTerms;
+	}
+		
+	/**
+	 * Makes an array list containing one of every term that is contained with in the
+	 * documents in the inputed set
+	 * @param set Dataset to build list from
+	 * @return	ArrayList<String> of terms
+	 */
+	private static ArrayList<String> buildSetTermList(Dataset set){
+		ArrayList<String> setTermList = new ArrayList<>();
+		
+		for(BowDocument doc : set.getDocs()){
+			for(String term : doc.getTermList()){
+				if(!setTermList.contains(term)){
+					setTermList.add(term);
+				}
+			}
+		}
+		return setTermList;
+	}
 	 
 	 /**
 	  * Calculates BM25 weighting and saves to docs and bm hashmap
 	  */
-	 private static TreeMap<String, Double> calcBM25(
+	 private static HashMap<String, Double> calcBM25(
 			 Dataset set, 
 			 ArrayList<String> query){
 		 
-		 TreeMap<String, Double> bmScores = new TreeMap<>();
+		 HashMap<String, Double> bmScores = new HashMap<>();
 		 for(BowDocument doc : set.getDocs()){
 			 bmScores.put(doc.toString(), Weighting.calculateBM25(doc, set.getDocs(), query));
 		 }
